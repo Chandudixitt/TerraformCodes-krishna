@@ -1,7 +1,4 @@
-# variable "m_userroles" {
-#   type = map(any)
-#   description = "map of E-mails Ids and roles"
-# } 
+
 variable "m_scope" {
   type = string
   description = "resource on which access is to be given"

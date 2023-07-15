@@ -16,7 +16,11 @@ variable "env_prefix" {
   description = "Environment prefix in the names of resources"
 }
 variable "rg_names" {  
-  type = map(any)    
+  type = list(object({
+    rg_name_sufix = string
+    location = string
+    location_prefix = string
+  }))    
   description = "names of resourcegroups to be created and assigned in the specified location/region"
 }
 variable "virtualnetworks" {
@@ -58,11 +62,21 @@ variable "nsg_with_rules" {
   }))
   description = "The values for each NSG rules"
 }
+variable "run_urole_module" {
+  type = string
+  description = "apply this module only when said yes or skip running"
+  default = "no"
+}
 variable "userroles" {
   type = map(object({
     rg_index = number
     role_defs = list(string)
   }))
+}
+variable "create_vnetpeering" {
+  type = string
+  description = "apply this module only when said yes or skip creating"
+  default = "no"
 }
 variable "vm_details" {
   type = map(object({

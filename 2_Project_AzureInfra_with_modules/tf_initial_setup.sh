@@ -1,12 +1,17 @@
 #!/bin/bash
 
-#Variables
-resourceGroupName="evtz-eu-rgtf"
-storageAccountName="evtzeustractf"
-containerName="evtz-eu-cntfstate"
+# $1,$2,$3 are the arguments from azure devops pipeline.
+ 
+resourceGroupName=$1 
+storageAccountName=$2 
+containerName=$3
+#umi_objectid = $4 
+
 location="eastus"
 sku="Standard_LRS"
-subscriptionName="xxxxxxxxxx" # Enter your subscription name or you can run $(az account show --query name --output tsv)
+subscriptionName="Azure DevTest subscription 1" # Enter your subscription name or you can run $(az account show --query name --output tsv)
+
+# az login --identity -u $umi_objectid
 
 # Create resource group
 echo "Checking if [$resourceGroupName] resource group actually exists in the [$subscriptionName] subscription..."
