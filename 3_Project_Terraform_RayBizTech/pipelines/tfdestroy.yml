@@ -1,0 +1,84 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pool:
+  name: 'Default'
+
+variables:
+  - group: backendvariables
+
+stages:
+  - stage: TerraformInitPlan
+    jobs: 
+      - job: TerraformInitPlan
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: 'az login --identity -u ''$(umi_objectid)'''
+# init Terraform task with required parameters.
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Init-Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: '$(serviceconnection)'
+              backendAzureRmResourceGroupName: '$(bknd_rg_name)'
+              backendAzureRmStorageAccountName: '$(bknd_strac_name)'
+              backendAzureRmContainerName: '$(container_name)' 
+              backendAzureRmKey: '$(tfstate_name)'
+          - task: AzureCLI@2
+            displayName: 'Retrieve Storage Account Access Key'
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az login --identity -u ''$(umi_objectid)''
+                az storage account keys list --account-name $(bknd_strac_name) --query "[0].value" -o tsv
+
+# Start Terraform Destroy.
+  - stage: TerraformDestroy
+    condition: succeeded('TerraformInitPlan')
+    dependsOn: TerraformInitPlan
+    jobs:
+      - job: TerraformApply
+        steps:
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Init-Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: '$(serviceconnection)'
+              backendAzureRmResourceGroupName: '$(bknd_rg_name)'
+              backendAzureRmStorageAccountName: '$(bknd_strac_name)'
+              backendAzureRmContainerName: '$(container_name)' 
+              backendAzureRmKey: '$(tfstate_name)'
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Destroy
+            inputs:
+                   provider: 'azurerm'
+                   command: 'destroy'
+                   environmentServiceNameAzureRM: '$(serviceconnection)'
+
+# Delete Container 
+  - stage: DeleteTFState
+    jobs: 
+      - job: DeleteTFState
+        steps:          
+          - task: AzureCLI@2
+            displayName: DeleteTFState
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az login --identity -u ''$(umi_objectid)''
+                key=$(az storage account keys list --account-name $(bknd_strac_name) --query "[0].value" -o tsv)
+                az storage blob delete --account-key $key -c $(container_name) -n $(tfstate_name) --account-name $(bknd_strac_name)

@@ -1,0 +1,126 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none # Here not specified branch to trigger
+
+pool:
+  name: 'Default'  # Configured custom agent "primesoft-devops" in Default pool 
+
+variables:
+  - group: backendvariables
+
+stages:
+  - stage: TerraformBackend
+    jobs:
+      - job: Create_Backend_If_Not_Found
+        continueOnError: false
+        steps:
+# Get access from User Management Identity.
+          - task: AzureCLI@2
+            displayName: 'Azure Login with UMI'
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: 'az login --identity -u ''$(umi_objectid)''' 
+# Creating new container to resepective branch with branch name. 
+          - task: AzureCLI@2
+            displayName: 'Create_Backend_If_Not_Found'
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'scriptPath'
+              scriptPath: '$(System.DefaultWorkingDirectory)/tfbackend.sh'
+              arguments: '$(bknd_rg_name) $(bknd_strac_name) $(container_name)'
+# Terraform Init Step starts.
+  - stage: TerraformInit
+    jobs:
+      - job: InitValidate
+        continueOnError: false
+        steps:
+# init Terraform task with required parameters. 
+          - task: AzureCLI@2
+            displayName: 'Azure Login with UMI'
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: 'az login --identity -u ''$(umi_objectid)'''
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Initialization
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: '$(serviceconnection)'
+              backendAzureRmResourceGroupName: '$(bknd_rg_name)'
+              backendAzureRmStorageAccountName: '$(bknd_strac_name)'
+              backendAzureRmContainerName: '$(container_name)' 
+              backendAzureRmKey: '$(tfstate_name)'
+# Get Storage Account Access Key 
+          - task: AzureCLI@2
+            displayName: 'Retrieve Storage Account Access Key'
+            inputs:
+              azureSubscription: '$(serviceconnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az login --identity -u ''$(umi_objectid)''
+                az storage account keys list --account-name $(bknd_strac_name) --query "[0].value" -o tsv
+# Validate Terraform script 
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Validatation
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+
+# Start Terraform Plan
+
+  - stage: TerraformPlan
+    condition: succeeded('TerraformInit')
+    dependsOn: TerraformInit
+    jobs: 
+      - job: TerraformPlan
+        steps:
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Initialization
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: '$(serviceconnection)'
+              backendAzureRmResourceGroupName: '$(bknd_rg_name)'
+              backendAzureRmStorageAccountName: '$(bknd_strac_name)'
+              backendAzureRmContainerName: '$(container_name)'
+              backendAzureRmKey: '$(tfstate_name)'
+
+# Start Terraform Plan
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              environmentServiceNameAzureRM: '$(serviceconnection)'
+# Start Terraform Apply
+  - stage: TerraformApply
+    condition: succeeded('TerraformPlan')
+    dependsOn: TerraformPlan
+    jobs:
+     - job: TerraformApply
+       steps:
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Initialization
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: '$(serviceconnection)'
+              backendAzureRmResourceGroupName: '$(bknd_rg_name)'
+              backendAzureRmStorageAccountName: '$(bknd_strac_name)'
+              backendAzureRmContainerName: '$(container_name)'
+              backendAzureRmKey: '$(tfstate_name)'           
+          - task: TerraformTaskV4@4
+            displayName: Terraform-Apply
+            inputs:
+                provider: 'azurerm'
+                command: 'apply'
+                environmentServiceNameAzureRM: '$(serviceconnection)'
