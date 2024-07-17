@@ -1,35 +1,28 @@
-rgname = [ {rg_name = "rbt1-rg",location = "East US"} ]
+rgname = [ {rg_name = "PrimeSquare-rg",location = "Central India"} ]
 
 vnet = [ 
-{vnetname = "rbt1-vnet",cidr = "10.1.0.0/16", rg_index = 0}, 
-{vnetname = "rbt2-vnet",cidr = "10.2.0.0/16", rg_index = 0} 
+{vnetname = "PrimeSquare-IAC1-vnet",cidr = "10.1.0.0/16", rg_index = 0}, 
+{vnetname = "PrimeSquare-IAC2-vnet",cidr = "10.2.0.0/16", rg_index = 0} 
 ]
 
 subnet = [ 
-{snetname = "rbt1-snet",scidr = "10.1.1.0/24", vnet_index = 0}, 
-{snetname = "rbt2-snet",scidr = "10.2.1.0/24", vnet_index = 1} 
+{snetname = "PrimeSquare-IAC1-snet",scidr = "10.1.1.0/24", vnet_index = 0}, 
+{snetname = "PrimeSquare-IAC2-snet",scidr = "10.2.1.0/24", vnet_index = 1} 
 ]
 
-aksdetails = [ {
-  aksname = "rbt-aks"
-  rg_index = 0
-  nodecount = 1
-  nodesize = "Standard_D2_v2"
-} ]
-
 vm_details = [ {
-        vm_name          = "rbt-vm"
+        vm_name          = "PrimeSquare-IAC-vm"
         vm_count         = 1   
         rg_index         = 0
         subnet_index     = 0
-        size             = "Standard_B1ls"
-        username         = "rbt"
-        password         = "raybiztech@123"
+        size             = "Standard_DS1_v2"
+        username         = "ubuntu"
+        password         = "Primesoft@123"
         disk_type        = "Standard_LRS"
         os_image         = {
             publisher = "Canonical"
-            offer     = "UbuntuServer"
-            sku       = "18.04-LTS" 
+            offer     = "0001-com-ubuntu-server-jammy"
+            sku       = "22_04-lts" 
             version   = "latest"
         }
 } ]

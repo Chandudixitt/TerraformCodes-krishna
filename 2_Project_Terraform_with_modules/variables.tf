@@ -29,15 +29,6 @@ variable "subnet" {
     }))
 }
 
-variable "aksdetails" {
-    type = list(object({
-      aksname = string
-      rg_index = number
-      nodecount = number
-      nodesize = string
-    }))
-}
-
 variable "vm_details" {
   type = list(object({
     vm_name = string

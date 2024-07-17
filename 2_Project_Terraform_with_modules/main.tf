@@ -30,23 +30,6 @@ module "subnet" {
 depends_on = [ module.vnet.name ]
 }
 
-data "azurerm_user_assigned_identity" "umi" {
-  name                = "tfumi"
-  resource_group_name = "aks-rg"
-}
-module "aks" {
-  source = "./modules/azure-aks"
-  m_aksname = var.aksdetails[0].aksname
-  m_node_count = var.aksdetails[0].nodecount
-  m_node_size = var.aksdetails[0].nodesize
-  m_uami = data.azurerm_user_assigned_identity.umi.id
-  m_rgname = module.rg[var.aksdetails[0].rg_index].rg_name
-  m_location = module.rg[var.aksdetails[0].rg_index].rg_location
-  m_tags = var.tags
-
-depends_on = [ module.rg ]
-}
-
 # Module Virtual_Machine
 
 module "vm" {
